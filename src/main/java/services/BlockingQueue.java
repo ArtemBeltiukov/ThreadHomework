@@ -15,45 +15,56 @@ public class BlockingQueue {
 
     public synchronized Runnable getTask() {
         log.info("get element");
-        while (tasks.isEmpty()) {
+        while (tasks.isEmpty() && !Thread.interrupted()) {
             try {
                 log.info("waiting. Is empty");
-                wait();
+                wait(10000);
                 log.info("continue");
             } catch (InterruptedException e) {
-                log.log(Level.WARNING, "Interrupted!", e);
+                log.log(Level.INFO, "Interrupted!", e);
+                Thread.currentThread().interrupt();
+            }
+            if (tasks.isEmpty()) {
                 Thread.currentThread().interrupt();
             }
         }
 
-        Runnable task = tasks.get(0);
-        try {
-            waitAnswer();
-        } catch (InterruptedException e) {
-            log.info("interrupted"+e);
-            Thread.currentThread().interrupt();;
+        if (!tasks.isEmpty()) {
+            Runnable task = tasks.get(0);
+            try {
+                waitAnswer();
+            } catch (InterruptedException e) {
+                log.info("interrupted" + e);
+                Thread.currentThread().interrupt();
+            }
+            tasks.remove(task);
+            notifyAll();
+            return task;
         }
-        tasks.remove(task);
-        notifyAll();
-        return task;
+        return null;
     }
 
     public synchronized void putTask(Runnable task) {
         log.info("put element");
-        while (getSize()>5){
+        while (getSize() >= 5) {
             try {
                 log.info("waiting. More than 5 elements! ");
-                wait();
+                wait(10000);
             } catch (InterruptedException e) {
-                log.info("interrupted"+e);
-                Thread.currentThread().interrupt();;
+                log.info("interrupted" + e);
+                Thread.currentThread().interrupt();
+            }
+            if (getSize() >= 5) {
+                Thread.currentThread().interrupt();
             }
         }
-        tasks.add(task);
-        notifyAll();
+        if (getSize() < 5) {
+            tasks.add(task);
+            notifyAll();
+        }
     }
+
     private void waitAnswer() throws InterruptedException {
         Thread.sleep(100);
     }
-
 }

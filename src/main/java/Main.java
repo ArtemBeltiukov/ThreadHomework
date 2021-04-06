@@ -14,30 +14,28 @@ public class Main {
         ExecutorService executorService = Executors.newFixedThreadPool(20);
         Logger log = Logger.getLogger(Main.class.getName());
         Thread consumer = new Thread(() -> {
-            for (int i = 0;i<5;i++){
-                blockingQueue.putTask(new RequestRunner(new BookUtils().createRequest()));
-            }
+            blockingQueue.putTask(new RequestRunner(new BookUtils().createRequest()));
         });
 
         Thread producer = new Thread(() -> {
-            for (int i = 0;i<5;i++){
-                Runnable task = blockingQueue.getTask();
+            Runnable task = blockingQueue.getTask();
+            if (task != null)
                 task.run();
-            }
         });
 
-        for (int i = 0;i<3;i++){
+        for (int i = 0; i < 9; i++) {
             executorService.execute(producer);
         }
-        for (int i = 0;i<3;i++){
+        for (int i = 0; i < 6; i++) {
             executorService.execute(consumer);
         }
 
         try {
             executorService.awaitTermination(5, TimeUnit.SECONDS);
         } catch (InterruptedException e) {
-            log.info("interrupted"+e);
-            Thread.currentThread().interrupt();;
+            log.info("interrupted" + e);
+            Thread.currentThread().interrupt();
+            ;
         }
         executorService.shutdown();
     }
